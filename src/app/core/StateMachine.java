@@ -1,82 +1,85 @@
 package app.core;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 
-public class StateMachine {
-    private HashMap<String, State> states = new HashMap<>();
-    private String currentState = null, nextState = null;
+public class StateMachine<State extends Enum<State>> {
+    private EnumMap<State, StateMethod<State>> states;
+    private State currentState = null, nextState = null, startingState = null;
     private boolean stateQueueRunning = false;
 
-    public void addState(String stateName, State state) throws Exception {
-        if (states.containsKey(stateName)) throw new Exception("Cannot add a state with a name that has already been used.\nTrying to add state " + stateName + ".");
-        states.put(stateName, state);
-        if (states.size() < 2) currentState = nextState = stateName;
+    public StateMachine(Class<State> enumClass) {
+        states = new EnumMap<>(enumClass);
     }
 
-    public void runState(String stateName) {
-        try {
-            states.get(stateName).run(stateName);
-        } catch (Exception e) {
-            e.printStackTrace();
+    public void addState(State state, StateMethod<State> method) {
+        states.put(state, method);
+        if (startingState == null) {
+        	startingState = state;
         }
     }
-
-    public void setCurrentState(String stateName) {
-        currentState = stateName;
-    }
-    public void setNextState(String stateName) {
-        nextState = stateName;
-    }
-    public String getCurrentState() {
-        return currentState;
-    }
-    public String getNextState() {
-        return nextState;
-    }
-
-    public void runCurrentState() throws Exception {
-        if (stateQueueRunning) throw new Exception("No states can be ran manually while the state queue is running, except if explicitly ran with the \"runState(stateName)\" method.");
-        try {
-            nextState = states.get(currentState).run(currentState);
-        } catch (Exception e) {
-            nextState = null;
-            e.printStackTrace();
+    public void runState(State state) {
+        if (!states.containsKey(state)) {
+            throw new RuntimeException("The given state is innexistent!");
         }
+        states.get(state).run(currentState);
     }
-    public void runNextState() throws Exception {
-        if (stateQueueRunning) throw new Exception("No states can be ran manually while the state queue is running, except if explicitly ran with the \"runState(stateName)\" method.");
+    public void setCurrentState(State state) {
+        currentState = state;
+    }
+    public void setNextState(State state) {
+        nextState = state;
+    }
+    public void setStartingState(State state) {
+        startingState = state;
+    }
+    public void runCurrentState() {
+        if (stateQueueRunning) {
+            throw new RuntimeException("No states can be ran manually while the state queue is running, except if explicitly ran with the \"runState(stateName)\" method.");
+        }
+        if (!states.containsKey(currentState)) {
+            throw new RuntimeException("The given state is innexistent!");
+        }
+        nextState = states.get(currentState).run(currentState);
+    }
+    public void runNextState() {
+        if (stateQueueRunning) {
+            throw new RuntimeException("No states can be ran manually while the state queue is running, except if explicitly ran with the \"runState(stateName)\" method.");
+        }
+        if (!states.containsKey(currentState)) {
+            throw new RuntimeException("The given state is innexistent!");
+        }
         currentState = nextState;
-        try {
-            nextState = states.get(currentState).run(currentState);
-        } catch (Exception e) {
-            nextState = null;
-            e.printStackTrace();
-        }
+        nextState = states.get(currentState).run(currentState);
     }
-    private void runNextStep() {
-        currentState = nextState;
-        try {
-            nextState = states.get(currentState).run(currentState);
-        } catch (Exception e) {
-            nextState = null;
-            e.printStackTrace();
-        }
+    public void resetStateQueue() {
+        nextState = currentState = startingState;
     }
     public void startStateQueue() {
-        if (!stateQueueRunning) nextState = currentState;
+        if (!stateQueueRunning) {
+            resetStateQueue();
+        }
         stateQueueRunning = true;
     }
     public void stopStateQueue() {
         stateQueueRunning = false;
     }
-    public void step() throws Exception {
-        if (!stateQueueRunning) throw new Exception("State queue must be started before stepping.");
-        runNextStep();
+    public void step() {
+        if (!stateQueueRunning) {
+            throw new RuntimeException("State queue must be started before stepping.");
+        }
+        currentState = nextState;
+        nextState = states.get(currentState).run(currentState);
         if (nextState == null) {
             stopStateQueue();
         }
     }
     public boolean isStateQueueRunning() {
-        return stateQueueRunning;
+    	return stateQueueRunning;
+    }
+
+    // Utility classes
+    @FunctionalInterface
+    public interface StateMethod<State> {
+        public State run(State currentState);
     }
 }

@@ -1,41 +1,41 @@
 package app.launcher;
 
-import app.core.State;
+import java.util.Scanner;
+
 import app.core.StateMachine;
 
 public class Main {
-    public static int count = 0;
+	static String username, output;
+
+    public enum State {
+        GetUserInput,
+        ProcessInput,
+        Output
+    }
     public static void main(String[] args) {
-        State state1 = (String currentState) -> {
-            System.out.println(count + "  1");
-            count++;
-            if (count > 10) return "state2";
-            return currentState;
-        };
-        State state2 = (String currentState) -> {
-            System.out.println(count + "  2");
-            count++;
-            if (count > 20) return null;
-            return currentState;
-        };
-        StateMachine stateMachine = new StateMachine();
-        try {
-            stateMachine.addState("state1", state1);
-            stateMachine.addState("state2", state2);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        System.out.println(stateMachine.getCurrentState());
-        System.out.println(stateMachine.getNextState());
-
+        StateMachine<State> stateMachine = new StateMachine<>(State.class);
+        stateMachine.addState(State.GetUserInput, Main::getUserInput);
+        stateMachine.addState(State.ProcessInput, Main::processInput);
+        stateMachine.addState(State.Output, Main::output);
         stateMachine.startStateQueue();
         while (stateMachine.isStateQueueRunning()) {
-            try {
-                stateMachine.step();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            stateMachine.step();
         }
+    }
+
+    public static State getUserInput(State currentSatate) {
+    	Scanner scanner = new Scanner(System.in);
+    	System.out.println("Enter username:");
+    	username = scanner.nextLine();
+    	scanner.close();
+    	return State.ProcessInput;
+    }
+    public static State processInput(State currentState) {
+    	output = "The username of this user is: \"" + username + "\"";
+    	return State.Output;
+    }
+    public static State output(State currentState) {
+    	System.out.println(output);
+    	return null;
     }
 }
