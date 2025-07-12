@@ -6,6 +6,7 @@ import app.core.StateMachine;
 
 public class Main {
 	static String username, output;
+    static Scanner scanner;
 
     public enum State {
         GetUserInput,
@@ -24,10 +25,9 @@ public class Main {
     }
 
     public static State getUserInput(State currentSatate) {
-    	Scanner scanner = new Scanner(System.in);
+    	scanner = new Scanner(System.in);
     	System.out.println("Enter username:");
     	username = scanner.nextLine();
-    	scanner.close();
     	return State.ProcessInput;
     }
     public static State processInput(State currentState) {
@@ -36,6 +36,10 @@ public class Main {
     }
     public static State output(State currentState) {
     	System.out.println(output);
-    	return null;
+        if (username.compareTo("q") == 0) {
+    	    scanner.close();
+            return null;
+        }
+    	return State.GetUserInput;
     }
 }
