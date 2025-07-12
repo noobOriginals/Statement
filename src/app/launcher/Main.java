@@ -9,6 +9,7 @@ public class Main {
     static Scanner scanner;
 
     public enum State {
+        EXIT,
         GetUserInput,
         ProcessInput,
         Output
@@ -18,27 +19,29 @@ public class Main {
         stateMachine.addState(State.GetUserInput, Main::getUserInput);
         stateMachine.addState(State.ProcessInput, Main::processInput);
         stateMachine.addState(State.Output, Main::output);
-        stateMachine.startStateQueue();
+        stateMachine.setStartingState(State.GetUserInput);
+        stateMachine.setExitState(State.EXIT);
+        stateMachine.startStateQueueAndReset();
         while (stateMachine.isStateQueueRunning()) {
-            stateMachine.step();
+            stateMachine.autoExitStep();
         }
     }
 
-    public static State getUserInput(State currentSatate) {
+    public static State getUserInput() {
     	scanner = new Scanner(System.in);
     	System.out.println("Enter username:");
     	username = scanner.nextLine();
     	return State.ProcessInput;
     }
-    public static State processInput(State currentState) {
+    public static State processInput() {
     	output = "The username of this user is: \"" + username + "\"";
     	return State.Output;
     }
-    public static State output(State currentState) {
+    public static State output() {
     	System.out.println(output);
         if (username.compareTo("q") == 0) {
     	    scanner.close();
-            return null;
+            return State.EXIT;
         }
     	return State.GetUserInput;
     }
